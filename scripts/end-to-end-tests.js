@@ -3212,6 +3212,34 @@
         new Derived(foo)
       `,
     }),
+    test(['in.js', '--outfile=node.js', '--target=es6'], {
+      'in.js': `
+        let a, b, c, x = 123
+        class Foo {
+          #a() { a = { this: this, args: arguments } }
+          get #b() { return function () { b = { this: this, args: arguments } } }
+          #c = function () { c = { this: this, args: arguments } }
+          bar() { (this.#a)\`a\${x}aa\`; (this.#b)\`b\${x}bb\`; (this.#c)\`c\${x}cc\` }
+        }
+        new Foo().bar()
+        if (!(a.this instanceof Foo) || !(b.this instanceof Foo) || !(c.this instanceof Foo)) throw 'fail'
+        if (JSON.stringify([...a.args, ...b.args, ...c.args]) !== JSON.stringify([['a', 'aa'], 123, ['b', 'bb'], 123, ['c', 'cc'], 123])) throw 'fail'
+      `,
+    }),
+    test(['in.js', '--outfile=node.js', '--target=es6'], {
+      'in.js': `
+        let a, b, c, x = 123
+        class Foo {
+          #a() { a = { this: this, args: arguments } }
+          get #b() { return function () { b = { this: this, args: arguments } } }
+          #c = function () { c = { this: this, args: arguments } }
+          bar() { (0, this.#a)\`a\${x}aa\`; (0, this.#b)\`b\${x}bb\`; (0, this.#c)\`c\${x}cc\` }
+        }
+        new Foo().bar()
+        if (a.this instanceof Foo || b.this instanceof Foo || c.this instanceof Foo) throw 'fail'
+        if (JSON.stringify([...a.args, ...b.args, ...c.args]) !== JSON.stringify([['a', 'aa'], 123, ['b', 'bb'], 123, ['c', 'cc'], 123])) throw 'fail'
+      `,
+    }),
   )
 
   // Async lowering tests
