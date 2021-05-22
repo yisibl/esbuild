@@ -100,6 +100,18 @@ async function test_case(esbuild, test) {
     });
   }
 
+  // Ignore tests without expect_stdout, as these tests cannot be verified when run
+  if (!("expect_stdout" in test)) return;
+
+  // Ignore tests that will likely result in a syntax error in recent NodeJS versions.
+  // uglify-js generally accepts whatever inputs that NodeJS allowed/allows
+  // as long as it is unambiguous with grammar lookahead -
+  // even if it deviates from the latest ECMAScript specification.
+  // `true` in this context means "the minified test program output matches the
+  // unminified test program output for this version of NodeJS - whether valid
+  // or an error."
+  if (test.expect_stdout === true) return;
+
   // Ignore tests that no longer pass in modern versions of node. These tests
   // contain code that is now considered a syntax error. The relevant code is
   // this:
@@ -115,21 +127,8 @@ async function test_case(esbuild, test) {
   try {
     var { code: output } = await esbuild.transform(input_code, {
       minify: true,
-      target: 'es5',
     });
   } catch (e) {
-    // These two tests fail because they contain setters without arguments,
-    // which is a syntax error. These test failures do not indicate anything
-    // wrong with esbuild so the failures are ignored. Here is one of the
-    // tests:
-    //
-    //   function f(){var a={get b(){},set b(){}};return{a:a}}
-    //
-    if (test.name === 'unsafe_object_accessor' || test.name === 'keep_name_of_setter') {
-      console.error("*** skipping test with known syntax error:", test.name);
-      return;
-    }
-
     const formatError = ({ text, location }) => {
       if (!location) return `\nerror: ${text}`;
       const { file, line, column } = location;
