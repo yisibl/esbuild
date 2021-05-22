@@ -123,6 +123,13 @@ async function test_case(esbuild, test) {
     return;
   }
 
+  // Ignore tests that can't be parsed within a module due to top-level await
+  if (['defun_name', 'drop_fname', 'keep_fname', 'functions_anonymous',
+    'functions_inner_var', 'issue_4335_1', 'await'].includes(test.name)) {
+    console.error(`*** skipping test ${test.name} due to top-level await`);
+    return;
+  }
+
   // Run esbuild as a minifier
   try {
     var { code: output } = await esbuild.transform(input_code, {
@@ -134,7 +141,8 @@ async function test_case(esbuild, test) {
       const { file, line, column } = location;
       return `\n${file}:${line}:${column}: error: ${text}`;
     }
-    log("!!! esbuild failed\n---INPUT---\n{input}\n---ERROR---\n{error}\n", {
+    log("!!! esbuild failed on test {name}\n---INPUT---\n{input}\n---ERROR---\n{error}\n", {
+      name: JSON.stringify(test.name),
       input: input_code,
       error: (e && e.message || e) + '' + (e.errors ? e.errors.map(formatError) : ''),
     });
