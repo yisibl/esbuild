@@ -853,22 +853,34 @@ func TestAtRule(t *testing.T) {
 }
 `)
 
-	// https://drafts.csswg.org/css-fonts-4/#font-palette-values
+	// https://drafts.csswg.org/css-contain-3/#container-rule
 	expectPrinted(t, `
-		@font-palette-values Augusta {
-			font-family: Handover Sans;
-			base-palette: 3;
-			override-colors: 1 rgb(43, 12, 9), 2 #000, 3 var(--highlight)
+		@container my-layout (inline-size > 45em) {
+			.foo {
+				color: yellow;
+			}
 		}
-	`, `@font-palette-values Augusta {
-  font-family: Handover Sans;
-  base-palette: 3;
-  override-colors:
-    1 rgb(43, 12, 9),
-    2 #000,
-    3 var(--highlight);
+	`, `@container my-layout (inline-size > 45em) {
+  .foo {
+    color: yellow;
+  }
 }
 `)
+
+	expectPrintedMangleMinify(t, `@container  card (  inline-size  >  30em  )   and   style(  --responsive   =   true  )  {
+		.foo {
+				color: yellow;
+			}
+	}`, "@container card (inline-size > 30em) and style(--responsive = true){.foo{color:#ff0}}")
+
+	// Nested @supports
+	expectPrintedMinify(t, `@supports (  container-type: size  ) {
+		@container (  width  <=  150px  ) {
+			#inner {
+				background-color: skyblue;
+			}
+		}
+	}`, "@supports (container-type: size){@container (width <= 150px){#inner{background-color:skyblue}}}")
 
 	// https://drafts.csswg.org/css-counter-styles/#the-counter-style-rule
 	expectPrinted(t, `
